@@ -12,6 +12,7 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
 
+import android.app.Activity;
 import android.provider.Settings;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -159,6 +160,22 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
             }
         }
     }
+    //打开网络设置界面
+	@ReactMethod
+	public void openNetworkSettings(Callback cb) {
+		Activity currentActivity = getCurrentActivity();
+
+		if (currentActivity == null) {
+			cb.invoke(false);
+			return;
+		}
+		try {
+			currentActivity.startActivity(new Intent(android.provider.Settings.ACTION_WIFI_SETTINGS));
+			cb.invoke(true);
+		} catch (Exception e) {
+			cb.invoke(e.getMessage());
+		}
+	}
 
 	//Method to check if wifi is enabled
 	@ReactMethod
