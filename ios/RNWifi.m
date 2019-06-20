@@ -1,8 +1,11 @@
 #import "RNWifi.h"
 #import <NetworkExtension/NetworkExtension.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
+#import <ifaddrs.h>
+#import <net/if.h>
+#import <SystemConfiguration/CaptiveNetwork.h>
 // If using official settings URL
-//#import <UIKit/UIKit.h>
+#import <UIKit/UIKit.h>
 
 @implementation WifiManager
 RCT_EXPORT_MODULE();
@@ -71,19 +74,52 @@ RCT_EXPORT_METHOD(disconnectFromSSID:(NSString*)ssid
 RCT_REMAP_METHOD(getCurrentWifiSSID,
                  resolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject) {
+    if (![self isWiFiEnabled]) {
+        [self gotoSettings];
+    }else{
+        NSString *kSSID = (NSString*) kCNNetworkInfoKeySSID;
+        
+        NSArray *ifs = (__bridge_transfer id)CNCopySupportedInterfaces();
+        for (NSString *ifnam in ifs) {
+            NSDictionary *info = (__bridge_transfer id)CNCopyCurrentNetworkInfo((__bridge CFStringRef)ifnam);
+            if (info[kSSID]) {
+                resolve(info[kSSID]);
+                return;
+            }
+        }
+        
+        reject(@"cannot_detect_ssid", @"Cannot detect SSID", nil);
+        
+    }
+   
+}
+- (void)gotoSettings {
+    NSString *urlString = @"App-Prefs:root=WIFI";
+    NSURL *url = [NSURL URLWithString:urlString];
+    if ([[UIApplication sharedApplication] canOpenURL:url]) {
+        if (@available(iOS 10.0, *)) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+        } else {
+            [[UIApplication sharedApplication] openURL:url];
+        }
+    }
+}
+// 检测WIFI开关
+- (BOOL) isWiFiEnabled {
     
-    NSString *kSSID = (NSString*) kCNNetworkInfoKeySSID;
+    NSCountedSet * cset = [NSCountedSet new];
     
-    NSArray *ifs = (__bridge_transfer id)CNCopySupportedInterfaces();
-    for (NSString *ifnam in ifs) {
-        NSDictionary *info = (__bridge_transfer id)CNCopyCurrentNetworkInfo((__bridge CFStringRef)ifnam);
-        if (info[kSSID]) {
-            resolve(info[kSSID]);
-            return;
+    struct ifaddrs *interfaces;
+    
+    if( ! getifaddrs(&interfaces) ) {
+        for( struct ifaddrs *interface = interfaces; interface; interface = interface->ifa_next) {
+            if ( (interface->ifa_flags & IFF_UP) == IFF_UP ) {
+                [cset addObject:[NSString stringWithUTF8String:interface->ifa_name]];
+            }
         }
     }
     
-    reject(@"cannot_detect_ssid", @"Cannot detect SSID", nil);
+    return [cset countForObject:@"awdl0"] > 1 ? YES : NO;
 }
 
 - (NSDictionary*)constantsToExport {
