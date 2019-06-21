@@ -1,8 +1,17 @@
 #import "RNWifi.h"
 #import <NetworkExtension/NetworkExtension.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
-#import <ifaddrs.h>
+
 #import <net/if.h>
+#import <netdb.h>
+#import <sys/socket.h>
+#import <netinet/in.h>
+
+// ifaddrs
+#import <ifaddrs.h>
+
+// inet
+#import <arpa/inet.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
 // If using official settings URL
 #import <UIKit/UIKit.h>
@@ -103,6 +112,7 @@ RCT_REMAP_METHOD(getCurrentWifiSSID,
             [[UIApplication sharedApplication] openURL:url];
         }
     }
+    
 }
 // 检测WIFI开关
 - (BOOL) isWiFiEnabled {
@@ -119,9 +129,39 @@ RCT_REMAP_METHOD(getCurrentWifiSSID,
         }
     }
     
-    return [cset countForObject:@"awdl0"] > 1 ? YES : NO;
+    return [cset countForObject:@"awdl0"] > 1&&[self wiFiIPAddress].length > 0 ? YES : NO;
 }
 
+- (NSString *)wiFiIPAddress {
+    @try {
+        NSString *ipAddress;
+        struct ifaddrs *interfaces;
+        struct ifaddrs *temp;
+        int Status = 0;
+        Status = getifaddrs(&interfaces);
+        if (Status == 0) {
+            temp = interfaces;
+            while(temp != NULL) {
+                if(temp->ifa_addr->sa_family == AF_INET) {
+                    if([[NSString stringWithUTF8String:temp->ifa_name] isEqualToString:@"en0"]) {
+                        ipAddress = [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)temp->ifa_addr)->sin_addr)];
+                    }
+                }
+                temp = temp->ifa_next;
+            }
+        }
+        
+        freeifaddrs(interfaces);
+        
+        if (ipAddress == nil || ipAddress.length <= 0) {
+            return nil;
+        }
+        return ipAddress;
+    }
+    @catch (NSException *exception) {
+        return nil;
+    }
+}
 - (NSDictionary*)constantsToExport {
     // Officially better to use UIApplicationOpenSettingsURLString
     return @{
