@@ -85,6 +85,7 @@ RCT_REMAP_METHOD(getCurrentWifiSSID,
                  rejecter:(RCTPromiseRejectBlock)reject) {
     if (![self isWiFiEnabled]) {
         [self gotoSettings];
+        reject(@"cannot_detect_ssid", @"Cannot detect SSID", nil);
     }else{
         NSString *kSSID = (NSString*) kCNNetworkInfoKeySSID;
         
