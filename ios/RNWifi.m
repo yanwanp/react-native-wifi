@@ -104,16 +104,14 @@ RCT_REMAP_METHOD(getCurrentWifiSSID,
    
 }
 - (void)gotoSettings {
-    NSString *urlString = @"App-Prefs:root=WIFI";
-    NSURL *url = [NSURL URLWithString:urlString];
-    if ([[UIApplication sharedApplication] canOpenURL:url]) {
+    NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+    if ([[UIApplication sharedApplication] canOpenURL: url]) {
         if (@available(iOS 10.0, *)) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        } else {
-            [[UIApplication sharedApplication] openURL:url];
+            [[UIApplication sharedApplication] openURL: url options:@{} completionHandler:nil];
+        }else{
+            [[UIApplication sharedApplication] openURL: url];
         }
     }
-    
 }
 // 检测WIFI开关
 - (BOOL) isWiFiEnabled {
@@ -163,12 +161,6 @@ RCT_REMAP_METHOD(getCurrentWifiSSID,
         return nil;
     }
 }
-- (NSDictionary*)constantsToExport {
-    // Officially better to use UIApplicationOpenSettingsURLString
-    return @{
-             @"settingsURL": @"App-Prefs:root=WIFI"
-             };
-}
+
 
 @end
-
