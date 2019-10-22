@@ -12,7 +12,7 @@
 
 // inet
 #import <arpa/inet.h>
-#import <SystemConfiguration/CaptiveNetwork.h>
+
 // If using official settings URL
 #import <UIKit/UIKit.h>
 
@@ -83,6 +83,13 @@ RCT_EXPORT_METHOD(disconnectFromSSID:(NSString*)ssid
 RCT_REMAP_METHOD(getCurrentWifiSSID,
                  resolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject) {
+    NSString* phoneVersion = [[UIDevice currentDevice] systemVersion];
+    CGFloat version = [phoneVersion floatValue];
+    // 如果是iOS13 未开启地理位置权限 需要提示一下
+    if ([CLLocationManager authorizationStatus] == kCLAuthorizationStatusNotDetermined && version >= 13) {
+      self.locationManager = [[CLLocationManager alloc] init];
+      [self.locationManager requestWhenInUseAuthorization];
+    }
     if (![self isWiFiEnabled]) {
 //        [self gotoSettings];
         reject(@"cannot_detect_ssid", @"Cannot detect SSID", nil);
