@@ -6,8 +6,9 @@
 
 #import <Foundation/Foundation.h>
 #import <RCTBridgeModule.h>
-
+#import <CoreLocation/CoreLocation.h>
 @interface WifiManager : NSObject <RCTBridgeModule>
 
+@property (nonatomic,strong) CLLocationManager *locationManager;
 @end
 
